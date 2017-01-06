@@ -135,131 +135,132 @@ if __name__ == "__main__":
         } for mac, signal in wifi_data]
     }
     print '\n'.join([l.rstrip() for l in simplejson.dumps(location_request, sort_keys=True, indent=4*' ').splitlines()])
-    json_data = simplejson.JSONEncoder().encode(location_request)
-    http_request = urllib2.Request('https://www.googleapis.com/geolocation/v1/geolocate?key=' + API_KEY)
-    http_request.add_header('Content-Type', 'application/json')
 
     # Check for missing API_KEY
     if not API_KEY or API_KEY is 'YOUR_KEY':
         print "\nError: a Google Maps Geolocation API key is required, get it yours here:\n" + \
               "https://developers.google.com/maps/documentation/geolocation/intro\n"
         exit(1)
+    else:
+        json_data = simplejson.JSONEncoder().encode(location_request)
+        http_request = urllib2.Request('https://www.googleapis.com/geolocation/v1/geolocate?key=' + API_KEY)
+        http_request.add_header('Content-Type', 'application/json')
 
-    print "[+] Sending the request to Google"
+        print "[+] Sending the request to Google"
 
-    # TODO internet connection error handling ?
-    api_result = simplejson.loads(urllib2.urlopen(http_request, json_data).read())
+        # TODO internet connection error handling ?
+        api_result = simplejson.loads(urllib2.urlopen(http_request, json_data).read())
 
-    # TODO check if the amount of detected Wi-Fi access points is good enough to call the API
-    print "[+] Result"
-    print '\n'.join([l.rstrip() for l in simplejson.dumps(api_result, sort_keys=True, indent=4*' ').splitlines()])
+        # TODO check if the amount of detected Wi-Fi access points is good enough to call the API
+        print "[+] Result"
+        print '\n'.join([l.rstrip() for l in simplejson.dumps(api_result, sort_keys=True, indent=4*' ').splitlines()])
 
-    print "[+] Google Maps link"
-    print 'https://www.google.com/maps?q=%f,%f' % (api_result['location']['lat'], api_result['location']['lng'])
+        print "[+] Google Maps link"
+        print 'https://www.google.com/maps?q=%f,%f' % (api_result['location']['lat'], api_result['location']['lng'])
 
-    # TODO optional parameter
-    print "[+] Accuracy overview"
+        # TODO optional parameter
+        print "[+] Accuracy overview"
 
-    # TODO parameter for google.maps.MapTypeId
-    # ROADMAP   displays the default road map view. This is the default map type.
-    # SATELLITE displays Google Earth satellite images
-    # HYBRID    displays a mixture of normal and satellite views
-    # TERRAIN   displays a physical map based on terrain information.
-    map_type = 'HYBRID'  # HYBRID, ROADMAP, SATELLITE, TERRAIN
+        # TODO parameter for google.maps.MapTypeId
+        # ROADMAP   displays the default road map view. This is the default map type.
+        # SATELLITE displays Google Earth satellite images
+        # HYBRID    displays a mixture of normal and satellite views
+        # TERRAIN   displays a physical map based on terrain information.
+        map_type = 'HYBRID'  # HYBRID, ROADMAP, SATELLITE, TERRAIN
 
-    html="""<!DOCTYPE html>
-    <html>
-        <head>
-            <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-            <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+        html="""<!DOCTYPE html>
+        <html>
+            <head>
+                <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+                <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
 
-            <style type="text/css">
-                html, body {
-                    height: 100%;
-                    margin: 0;
-                    padding: 0;
-                }
-
-                #map_canvas {
-                    height: 100%;
-                }
-
-                @media print {
+                <style type="text/css">
                     html, body {
-                        height: auto;
+                        height: 100%;
+                        margin: 0;
+                        padding: 0;
                     }
 
                     #map_canvas {
-                        height: 650px;
+                        height: 100%;
                     }
-                }
-            </style>
 
-            <title>Geolocation</title>
-            <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
-            <script type="text/javascript">
-                function initialize() {
-                    var mapOptions = {
-                        zoom: 18,
-                        center: new
-                        google.maps.LatLng("""+str(api_result['location']['lat'])+", "+str(api_result['location']['lng'])+"""),
-                        mapTypeId: google.maps.MapTypeId."""+map_type+"""
+                    @media print {
+                        html, body {
+                            height: auto;
+                        }
 
-                    };
+                        #map_canvas {
+                            height: 650px;
+                        }
+                    }
+                </style>
 
-                    var map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+                <title>Geolocation</title>
+                <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
+                <script type="text/javascript">
+                    function initialize() {
+                        var mapOptions = {
+                            zoom: 18,
+                            center: new
+                            google.maps.LatLng("""+str(api_result['location']['lat'])+", "+str(api_result['location']['lng'])+"""),
+                            mapTypeId: google.maps.MapTypeId."""+map_type+"""
 
-                    // Construct the accuracy circle.
-                    var accuracyOptions = {
-                        strokeColor: "#000000",
-                        strokeOpacity: 0.8,
-                        strokeWeight: 2,
-                        fillColor: "#000000",
-                        fillOpacity: 0.35,
-                        map: map,
-                        center: mapOptions.center,
-                        radius: """+str(api_result["accuracy"])+"""
-                    };
-                    var accuracyCircle = new google.maps.Circle(accuracyOptions);
+                        };
 
-                    var contentString = '<div>'+
-                        '<p><b>Wi-Fi geolocation</b><br>'+
-                        'Latitude : """+str(api_result['location']['lat'])+"""<br>'+
-                        'Longitude : """+str(api_result['location']['lng'])+"""<br>'+
-                        'Accuracy : """+str(api_result['accuracy'])+"""</p>'+
-                        '</div>';
+                        var map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 
-                    var infoWindow = new google.maps.InfoWindow({
-                        content: contentString
-                    });
+                        // Construct the accuracy circle.
+                        var accuracyOptions = {
+                            strokeColor: "#000000",
+                            strokeOpacity: 0.8,
+                            strokeWeight: 2,
+                            fillColor: "#000000",
+                            fillOpacity: 0.35,
+                            map: map,
+                            center: mapOptions.center,
+                            radius: """+str(api_result["accuracy"])+"""
+                        };
+                        var accuracyCircle = new google.maps.Circle(accuracyOptions);
 
-                    var marker = new google.maps.Marker({
-                        position: mapOptions.center,
-                        map: map
-                    });
+                        var contentString = '<div>'+
+                            '<p><b>Wi-Fi geolocation</b><br>'+
+                            'Latitude : """+str(api_result['location']['lat'])+"""<br>'+
+                            'Longitude : """+str(api_result['location']['lng'])+"""<br>'+
+                            'Accuracy : """+str(api_result['accuracy'])+"""</p>'+
+                            '</div>';
 
-                    google.maps.event.addListener(accuracyCircle, 'click', function() {
-                        infoWindow.open(map,marker);
-                    });
+                        var infoWindow = new google.maps.InfoWindow({
+                            content: contentString
+                        });
 
-                    google.maps.event.addListener(marker, 'click', function() {
-                        infoWindow.open(map,marker);
-                    });
-                }
-            </script>
-        </head>
-        <body onload="initialize()">
-            <div id="map_canvas"></div>
-        </body>
-    </html>"""
+                        var marker = new google.maps.Marker({
+                            position: mapOptions.center,
+                            map: map
+                        });
 
-    # TODO parameters for output file path / name modification
-    overview_filename = 'Wifi_geolocation.html'
-    with open(overview_filename, 'wb') as overview_file:
-        overview_file.write(html)
+                        google.maps.event.addListener(accuracyCircle, 'click', function() {
+                            infoWindow.open(map,marker);
+                        });
 
-    pathname = os.path.dirname(sys.argv[0])
-    fullpath = os.path.abspath(pathname)
-    if not fullpath.endswith('/'):
-        fullpath += '/'
-    print fullpath + overview_filename
+                        google.maps.event.addListener(marker, 'click', function() {
+                            infoWindow.open(map,marker);
+                        });
+                    }
+                </script>
+            </head>
+            <body onload="initialize()">
+                <div id="map_canvas"></div>
+            </body>
+        </html>"""
+
+        # TODO parameters for output file path / name modification
+        overview_filename = 'Wifi_geolocation.html'
+        with open(overview_filename, 'wb') as overview_file:
+            overview_file.write(html)
+
+        pathname = os.path.dirname(sys.argv[0])
+        fullpath = os.path.abspath(pathname)
+        if not fullpath.endswith('/'):
+            fullpath += '/'
+        print fullpath + overview_filename
