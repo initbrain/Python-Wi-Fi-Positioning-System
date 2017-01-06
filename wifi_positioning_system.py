@@ -21,12 +21,6 @@ API_KEY = 'YOUR_KEY'
 def get_signal_strengths(wifi_scan_method, use_sudo):
     # GNU/Linux
     if wifi_scan_method is 'iw':
-        # Check for missing API_KEY
-        if not API_KEY or API_KEY is 'YOUR_KEY':
-            print "\nError: a Google Maps Geolocation API key is required, get it yours here:\n" + \
-                  "https://developers.google.com/maps/documentation/geolocation/intro\n"
-            exit(1)
-
         iw_command = '%siw dev %s scan' % ('sudo ' if use_sudo else '', sys.argv[1])
         iw_scan_status, iw_scan_result = getstatusoutput(iw_command)
 
@@ -144,6 +138,12 @@ if __name__ == "__main__":
     json_data = simplejson.JSONEncoder().encode(location_request)
     http_request = urllib2.Request('https://www.googleapis.com/geolocation/v1/geolocate?key=' + API_KEY)
     http_request.add_header('Content-Type', 'application/json')
+
+    # Check for missing API_KEY
+    if not API_KEY or API_KEY is 'YOUR_KEY':
+        print "\nError: a Google Maps Geolocation API key is required, get it yours here:\n" + \
+              "https://developers.google.com/maps/documentation/geolocation/intro\n"
+        exit(1)
 
     print "[+] Sending the request to Google"
 
