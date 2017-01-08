@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
+
 # Julien Deudon (initbrain) - 20/03/2012
 # modified to run on OS X - James Armitage - 25/06/2012
 # modified to process in python - Dan Gleebits - 26/06/2012
@@ -7,11 +8,11 @@
 # modified to work with the new Google geolocation API - Giovanni Angoli (juzam) - 03/01/2017
 # merging all modifications - Julien Deudon (initbrain) - 06/01/2017
 # modified to support new permissions assignement methods - Julien Deudon (initbrain) - 07/01/2017
+# source code reorganisation - Julien Deudon (initbrain) - 08/01/2017
 
 
 from commands import getoutput, getstatusoutput
 import sys, os, grp, re, simplejson, urllib2
-
 
 # A Google Maps Geolocation API key is required, get it yours here:
 # https://developers.google.com/maps/documentation/geolocation/intro
