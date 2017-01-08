@@ -178,6 +178,21 @@ def get_signal_strengths(wifi_scan_method):
 
             wifi_data = [(network.find("string").text, abs(int(network.findall("integer")[7].text))) for network in networks]
 
+    # OpenBSD
+    elif wifi_scan_method is 'ifconfig':
+        ifconfig_cmd = 'ifconfig %s scan' % (sys.argv[1])
+        ifconfig_scan_status, ifconfig_scan_result = getstatusoutput(ifconfig_cmd)
+
+        if ifconfig_scan_status != 0:
+            print "[!] Unable to scan for Wi-Fi networks !"
+            print "Used command: '%s'" % ifconfig_cmd
+            print "Result:\n" + '\n'.join(ifconfig_scan_result.split('\n')[:10]) + '\n[...]'
+            exit(1)
+        else:
+            parsing_result = re.compile("nwid\s+[\w-]+\s+chan\s+\d+\s+bssid\s+([\w\d\:]+)\s+([-\d]+)dBm", re.MULTILINE).findall(ifconfig_scan_result)
+
+            wifi_data = [(bss[0].replace(':', '-'), int(bss[1])) for bss in parsing_result]
+
     return wifi_data
 
 
