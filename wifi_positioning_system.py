@@ -8,7 +8,7 @@
 # modified to work with the new Google geolocation API - Giovanni Angoli (juzam) - 03/01/2017
 # merging all modifications - Julien Deudon (initbrain) - 06/01/2017
 # modified to support new permissions assignement methods - Julien Deudon (initbrain) - 07/01/2017
-# source code reorganisation - Julien Deudon (initbrain) - 08/01/2017
+# source code reorganization - Julien Deudon (initbrain) - 08/01/2017
 
 
 from commands import getoutput, getstatusoutput
