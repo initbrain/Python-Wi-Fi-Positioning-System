@@ -49,3 +49,15 @@ Special thanks go to contributors!
 *   **Installation on Mac OS X:**
 
         $ TODO
+
+
+*   **Contributors (post-repo):**
+
+    Initial publication on [Twitter](https://twitter.com/initbrain/status/215019236102377472)  
+    2012-06-25: modified to run on OS X - [James Armitage (armitagej)](https://twitter.com/armitagej)  
+    2012-06-26: modified to process in python - [Dan Gleebits (DGleebits)](https://twitter.com/DGleebits)  
+    2012-10-01: modified to parse the xml output of airport - [Vincent Ohprecio (BigsnarfDude)](https://twitter.com/BigsnarfDude)  
+    2017-01-03: modified to work with the new Google geolocation API - [Giovanni Angoli (juzam)](https://twitter.com/juzam)  
+    2017-01-06: merging all modifications - [Julien Deudon (initbrain)](https://twitter.com/initbrain)  
+    2017-01-07: modified to support new permissions assignement methods - [Julien Deudon (initbrain)](https://twitter.com/initbrain)  
+    2017-01-08: source code reorganization - [Julien Deudon (initbrain)](https://twitter.com/initbrain)
