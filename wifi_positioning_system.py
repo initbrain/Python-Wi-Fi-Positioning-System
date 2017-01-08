@@ -242,7 +242,7 @@ def check_prerequisites():
             if perm_cmd:
                 # Restart as root
                 #print "[+] This script need to be run as root, current user is '%s'" % os.environ.get('USER')
-                print "[+] Using '" + su_gui_cmd.split()[0] + "' for asking permissions"
+                print "[+] Using '" + perm_cmd.split()[0] + "' for asking permissions"
                 #print (perm_cmd.split()[0], perm_cmd.split() + [' '.join(['python'] + sys.argv)])
                 os.execvp(perm_cmd.split()[0], perm_cmd.split() + [' '.join(['python'] + sys.argv)])
 
