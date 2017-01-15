@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 
 from commands import getoutput, getstatusoutput
-import sys, os, grp, re, simplejson, urllib2
+import sys, os, grp, re, simplejson, urllib2, argparse
 
 # A Google Maps Geolocation API key is required, get it yours here:
 # https://developers.google.com/maps/documentation/geolocation/intro
@@ -33,6 +33,7 @@ def get_scriptpath():
 
 
 def prettify_json(json_data):
+    # TODO implement command line argument to not prettify JSON see get_arguments()
     return '\n'.join([l.rstrip() for l in simplejson.dumps(json_data, sort_keys=True, indent=4*' ').splitlines()])
 
 
@@ -148,7 +149,7 @@ def create_overview(api_result, filename='Wifi_geolocation.html', filepath=get_s
 def get_signal_strengths(wifi_scan_method):
     # GNU/Linux
     if wifi_scan_method is 'iw':
-        iw_command = 'iw dev %s scan' % (sys.argv[1])
+        iw_command = 'iw dev %s scan' % (args.wifi_interface)
         iw_scan_status, iw_scan_result = getstatusoutput(iw_command)
 
         if iw_scan_status != 0:
@@ -180,7 +181,7 @@ def get_signal_strengths(wifi_scan_method):
 
     # OpenBSD
     elif wifi_scan_method is 'ifconfig':
-        ifconfig_cmd = 'ifconfig %s scan' % (sys.argv[1])
+        ifconfig_cmd = 'ifconfig %s scan' % (args.wifi_interface)
         ifconfig_scan_status, ifconfig_scan_result = getstatusoutput(ifconfig_cmd)
 
         if ifconfig_scan_status != 0:
@@ -197,10 +198,7 @@ def get_signal_strengths(wifi_scan_method):
 
 
 def check_prerequisites():
-    if len(sys.argv) < 2:
-        print 'Python Wi-Fi Positioning System\n\n' + \
-              'Usage:\n\tpython '+sys.argv[0]+' <wifi interface>'
-        exit(1)
+    # Moved arguments check and parsing to get_arguments()
 
     # Do something/nothing here for different kind of systems
     if sys.platform in ('linux', 'linux2', 'darwin'):
@@ -247,9 +245,10 @@ def check_prerequisites():
             if perm_cmd:
                 # Restart as root
                 #print "[+] This script need to be run as root, current user is '%s'" % os.environ.get('USER')
-                print "[+] Using '" + perm_cmd.split()[0] + "' for asking permissions"
+                if args.verbose:
+                    print "[+] Using '" + perm_cmd.split()[0] + "' for asking permissions"
                 #print (perm_cmd.split()[0], perm_cmd.split() + [' '.join(['python'] + sys.argv)])
-                os.execvp(perm_cmd.split()[0], perm_cmd.split() + [' '.join(['python'] + sys.argv)])
+                os.execvp(perm_cmd.split()[0], perm_cmd.split() + sys.argv )
 
             which_iw_status, which_iw_result = getstatusoutput('which iw')
             if which_iw_status != 0:
@@ -276,7 +275,7 @@ def check_prerequisites():
     else:
         # All other systems - or exception for non-supported system
         # Like 'win32'...
-        # TODO is 'cygwin' could be found on Mac OS X operation systems ? 
+        # TODO is 'cygwin' could be found on Mac OS X operation systems ?
         print "Error: unsupported operating system..." + \
               "\nMicrosoft Windows operating systems are not currently supported, missing Wi-Fi cli tool / library." + \
               "\nIf you use a Mac OS X operating system, the detected plateform could have been 'cygwin'," + \
@@ -286,17 +285,36 @@ def check_prerequisites():
     return wifi_scan_method
 
 
-if __name__ == "__main__":
-    # TODO argparse
+def get_arguments():
+    parser = argparse.ArgumentParser(description='Python Wi-Fi Positioning System')
 
-    # TODO parameter for demo mode
-    demo = False  # Demonstration ?
-    if demo:
+    parser.add_argument('-v', '--verbose', action="store_true", help='Enable Verbose messages', default=False)
+    parser.add_argument('-p', '--json-prettify', action="store_true", help='Prettify JSON output (unimplemented)', default=False)
+    parser.add_argument('--with-overview', action="store_true", help='Eisable HTML overview file generation', default=False)
+    parser.add_argument('--demo', action="store_true", help='Demo mode', default=False)
+
+    requiredArguments = parser.add_argument_group('required arguments');
+    requiredArguments.add_argument('-i', action="store", dest="wifi_interface", help='Specify Wi-fi Scan Interface', required=True)  
+    
+    return parser.parse_args()
+
+if __name__ == "__main__":
+
+    # parse command line arguments
+
+    args = get_arguments()
+
+    # DEMO Mode
+    # parameter for demo mode set to False by default via get_arguments()
+    if args.demo:
         # TODO parameter for displaying messages or not
-        print "[+] Scanning nearby Wi-Fi networks..."
+        # --verbose command line argument see get_arguments()
+        if args.verbose:
+            print "[+] Scanning nearby Wi-Fi networks..."
 
         # Demo - West Norwood (London)
-        print "[+] Generating the HTML request"
+        if args.verbose:
+            print "[+] Generating the HTML request"
         wifi_data = [
             ('00-fe-f4-25-ee-30', -40),
             ('02-fe-f4-25-ee-30', -44),
@@ -309,11 +327,13 @@ if __name__ == "__main__":
         # Checking permissions, operating system and software dependencies
         wifi_scan_method = check_prerequisites()
 
-        print "[+] Scanning nearby Wi-Fi networks..."
+        if args.verbose:
+            print "[+] Scanning nearby Wi-Fi networks..."
         wifi_data = get_signal_strengths(wifi_scan_method)
         # TODO check if the amount of detected Wi-Fi access points is good enough to call the API
         
-    print "[+] Generating the HTML request"
+    if args.verbose:
+        print "[+] Generating the HTML request"
     location_request = {
         'considerIp': False,
         'wifiAccessPoints':[
@@ -323,7 +343,8 @@ if __name__ == "__main__":
             } for mac, signal in wifi_data]
     }
 
-    print prettify_json(location_request)
+    if args.verbose:
+        print prettify_json(location_request)
 
     # Check for missing API_KEY
     if not API_KEY or API_KEY is 'YOUR_KEY':
@@ -335,16 +356,23 @@ if __name__ == "__main__":
         http_request = urllib2.Request('https://www.googleapis.com/geolocation/v1/geolocate?key=' + API_KEY)
         http_request.add_header('Content-Type', 'application/json')
 
-        print "[+] Sending the request to Google"
+        if args.verbose:
+            print "[+] Sending the request to Google"
         # TODO internet connection error handling ?
         api_result = simplejson.loads(urllib2.urlopen(http_request, json_data).read())
 
-        print "[+] Result"
+        if args.verbose:
+            print "[+] Result"
+
+        # Print JSON results
         print prettify_json(api_result)
 
-        print "[+] Google Maps link"
-        print 'https://www.google.com/maps?q=%f,%f' % (api_result['location']['lat'], api_result['location']['lng'])
+        if args.verbose:
+            print "[+] Google Maps link"
+            print 'https://www.google.com/maps?q=%f,%f' % (api_result['location']['lat'], api_result['location']['lng'])
 
-        # TODO optional parameter
-        print "[+] Accuracy overview"
-        create_overview(api_result)
+        # --with-overview argument set to False by default via get_arguments()
+        if args.with_overview: 
+            if args.verbose:
+                print "[+] Accuracy overview"
+            create_overview(api_result)
