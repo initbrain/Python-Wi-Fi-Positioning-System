@@ -1,8 +1,27 @@
 #!/usr/bin/env python
-# -*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
+"""
+Python Wi-Fi Positioning System - Wi-Fi geolocation script using the Google Maps Geolocation API
 
+@author:     Julien Deudon
+
+@copyright:  Copyright 2017, Julien Deudon
+
+@license:    GNU GPL 3.0
+
+@contact:    initbrain@gmail.com
+"""
+
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from commands import getoutput, getstatusoutput
-import sys, os, grp, re, simplejson, urllib2, argparse
+import simplejson
+import urllib2
+import grp
+import sys
+import os
+import re
+
+__version__ = "0.1.15"
 
 # A Google Maps Geolocation API key is required, get it yours here:
 # https://developers.google.com/maps/documentation/geolocation/intro
@@ -33,8 +52,10 @@ def get_scriptpath():
 
 
 def prettify_json(json_data):
-    # TODO implement command line argument to not prettify JSON see get_arguments()
-    return '\n'.join([l.rstrip() for l in simplejson.dumps(json_data, sort_keys=True, indent=4*' ').splitlines()])
+    if args.json_prettify:
+        return '\n'.join([l.rstrip() for l in simplejson.dumps(json_data, sort_keys=True, indent=4*' ').splitlines()])
+    else:
+        return json_data
 
 
 def create_overview(api_result, filename='Wifi_geolocation.html', filepath=get_scriptpath()):
@@ -134,7 +155,9 @@ def create_overview(api_result, filename='Wifi_geolocation.html', filepath=get_s
     # TODO parameters for output file path / name modification
     with open(filepath+filename, 'wb') as overview:
         overview.write(html)
-    print filepath + filename
+
+    if args.verbose:
+        print filepath + filename
 
     # Keep the owners
     scriptpath = get_scriptpath()
@@ -147,6 +170,8 @@ def create_overview(api_result, filename='Wifi_geolocation.html', filepath=get_s
 
 
 def get_signal_strengths(wifi_scan_method):
+    wifi_data = []
+
     # GNU/Linux
     if wifi_scan_method is 'iw':
         iw_command = 'iw dev %s scan' % (args.wifi_interface)
@@ -201,12 +226,12 @@ def check_prerequisites():
     # Moved arguments check and parsing to get_arguments()
 
     # Do something/nothing here for different kind of systems
-    if sys.platform in ('linux', 'linux2', 'darwin'):
+    if sys.platform.startswith(('linux', 'netbsd', 'freebsd', 'openbsd')) or sys.platform == 'darwin':
         wifi_scan_method = None
         perm_cmd = None
 
         # Do something specific to GNU/Linux
-        if sys.platform in ('linux', 'linux2'):
+        if sys.platform.startswith('linux'):
             # If not launched with root permissions
             if os.geteuid() != 0:
                 # First try with 'sudo'
@@ -247,8 +272,14 @@ def check_prerequisites():
                 #print "[+] This script need to be run as root, current user is '%s'" % os.environ.get('USER')
                 if args.verbose:
                     print "[+] Using '" + perm_cmd.split()[0] + "' for asking permissions"
-                #print (perm_cmd.split()[0], perm_cmd.split() + [' '.join(['python'] + sys.argv)])
-                os.execvp(perm_cmd.split()[0], perm_cmd.split() + sys.argv )
+                #print perm_cmd.split()[0],
+                #      perm_cmd.split() + [
+                #          ' '.join(['./' + sys.argv[0].lstrip('./')] + sys.argv[1:])
+                #      ]
+                os.execvp(perm_cmd.split()[0],
+                          perm_cmd.split() + [
+                              ' '.join(['./' + sys.argv[0].lstrip('./')] + sys.argv[1:])
+                          ])
 
             which_iw_status, which_iw_result = getstatusoutput('which iw')
             if which_iw_status != 0:
@@ -272,6 +303,38 @@ def check_prerequisites():
                 exit(1)
             else:
                 wifi_scan_method = 'airport'
+
+        # Do something specific to OpenBSD
+        # TODO test with NetBSD and FreeBSD
+        elif sys.platform.startswith(('netbsd', 'freebsd', 'openbsd')):
+            # See: http://man.openbsd.org/su.1
+
+            # If the optional shell arguments are provided on the command line, they are passed to the login shell
+            # of the target login. This allows it to pass arbitrary commands via the -c option as understood by most
+            # shells. Note that -c usually expects a single argument only; you have to quote it when passing multiple
+            # words.
+
+            # If group 0 (normally "wheel") has users listed then only those users can su to "root". It is not
+            # sufficient to change a user's /etc/passwd entry to add them to the "wheel" group; they must explicitly
+            # be listed in /etc/group. If no one is in the "wheel" group, it is ignored, and anyone who knows the root
+            # password is permitted to su to "root".
+
+            # If not launched with root permissions
+            if os.geteuid() != 0:
+                # Try with 'su -c' if current user in 'wheel' group
+                # Like in the OpenBSD default su configuration
+                # "If group 0 (normally "wheel") has users listed then only those users can su to "root"."
+                # "If no one is in the "wheel" group, it is ignored [...]"
+                current_user_groups = [grp.getgrgid(g).gr_name for g in os.getgroups()]
+                if 'wheel' in current_user_groups:
+                    perm_cmd = 'su -c'
+                else:
+                    # TODO "If no one is in the "wheel" group, it is ignored [...]" ?
+                    print "Error: this script need to be run as root !"
+                    exit(1)
+
+            wifi_scan_method = 'ifconfig'
+
     else:
         # All other systems - or exception for non-supported system
         # Like 'win32'...
@@ -285,36 +348,96 @@ def check_prerequisites():
     return wifi_scan_method
 
 
-def get_arguments():
-    parser = argparse.ArgumentParser(description='Python Wi-Fi Positioning System')
+class MyParser(ArgumentParser):
+    def error(self, message):
+        sys.stderr.write('erreur: %s\n\n' % message)
+        #self.print_help()
+        self.print_usage()
+        sys.exit(2)
 
-    parser.add_argument('-v', '--verbose', action="store_true", help='Enable Verbose messages', default=False)
-    parser.add_argument('-p', '--json-prettify', action="store_true", help='Prettify JSON output (unimplemented)', default=False)
-    parser.add_argument('--with-overview', action="store_true", help='Eisable HTML overview file generation', default=False)
-    parser.add_argument('--demo', action="store_true", help='Demo mode', default=False)
 
-    requiredArguments = parser.add_argument_group('required arguments');
-    requiredArguments.add_argument('-i', action="store", dest="wifi_interface", help='Specify Wi-fi Scan Interface', required=True)  
-    
+def get_arguments(argv=None):
+    """Command line options."""
+
+    if argv is not None:
+        sys.argv.extend(argv)
+
+    program_name = os.path.basename(sys.argv[0])
+    program_version = 'v%s' % __version__
+    program_version_message = '%%(prog)s %s' % program_version
+    program_shortdesc = __import__('__main__').__doc__.split("\n")[1]
+    program_copyright = 'Copyright (c) 2017  Julien Deudon (initbrain)'
+
+    program_license = '''
+%s
+%s
+
+Licensed under the GNU General Public License, version 3.0
+
+This program comes with ABSOLUTELY NO WARRANTY; for details use '-L' or '--license'.
+This is free software, and you are welcome to redistribute it under certain conditions.
+''' % (program_shortdesc, program_copyright)
+
+    detailed_license = '''%s
+%s
+
+This program is free software: you can redistriute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Contact: initbrain@gmail.com''' % (program_shortdesc, program_copyright)
+
+    parser = MyParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
+
+    parser.add_argument('-V', '--version', action='version', version=program_version_message)
+    parser.add_argument('-L', '--license', action='version', version=detailed_license,
+                        help='show program\'s license details and exit')
+    parser.add_argument('-v', '--verbose', action="store_true",
+                        help='enable verbose messages',
+                        default=False)
+    parser.add_argument('-p', '--json-prettify', action="store_true",
+                        help='prettify JSON output',
+                        default=False)
+    parser.add_argument('-o', '--with-overview', action="store_true",
+                        help='accuracy overview file generation',
+                        default=False)
+    parser.add_argument('-k', '--api-key', action="store", dest="api_key",
+                        help='Google Maps Geolocation API key (could be hardcoded)',
+                        default=None)
+
+    # Because using Mac OS X don't require to specify a Wi-Fi interface
+    if sys.platform == 'darwin':
+        parser.add_argument('--demo', action="store_true", help='demo mode - West Norwood (London)', default=False)
+    else:
+        required_parser = parser.add_argument_group('required arguments')
+        required_parser = required_parser.add_mutually_exclusive_group(required=True)
+        required_parser.add_argument('-i', action="store", dest="wifi_interface", help='specify Wi-Fi scan interface')
+        required_parser.add_argument('--demo', action="store_true", help='demo mode - West Norwood (London)', default=False)
+
     return parser.parse_args()
 
+
 if __name__ == "__main__":
-
-    # parse command line arguments
-
+    # Parsing command line arguments
     args = get_arguments()
 
-    # DEMO Mode
-    # parameter for demo mode set to False by default via get_arguments()
+    # Parameter for demo mode set to False by default via get_arguments()
     if args.demo:
         # TODO parameter for displaying messages or not
         # --verbose command line argument see get_arguments()
         if args.verbose:
-            print "[+] Scanning nearby Wi-Fi networks..."
+            print "[+] Scanning nearby Wi-Fi networks (demo)"
 
         # Demo - West Norwood (London)
-        if args.verbose:
-            print "[+] Generating the HTML request"
         wifi_data = [
             ('00-fe-f4-25-ee-30', -40),
             ('02-fe-f4-25-ee-30', -44),
@@ -347,6 +470,8 @@ if __name__ == "__main__":
         print prettify_json(location_request)
 
     # Check for missing API_KEY
+    if args.api_key:
+        API_KEY = args.api_key
     if not API_KEY or API_KEY is 'YOUR_KEY':
         print "Error: a Google Maps Geolocation API key is required, get it yours here:\n" + \
               "https://developers.google.com/maps/documentation/geolocation/intro"
