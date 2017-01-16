@@ -20,6 +20,10 @@ import grp
 import sys
 import os
 import re
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
 
 __version__ = "0.1.15"
 
