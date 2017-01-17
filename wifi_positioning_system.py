@@ -276,10 +276,7 @@ def check_prerequisites():
                 #      perm_cmd.split() + [
                 #          ' '.join(['./' + sys.argv[0].lstrip('./')] + sys.argv[1:])
                 #      ]
-                os.execvp(perm_cmd.split()[0],
-                          perm_cmd.split() + [
-                              ' '.join(['./' + sys.argv[0].lstrip('./')] + sys.argv[1:])
-                          ])
+                os.execvp(perm_cmd.split()[0], perm_cmd.split() + sys.argv )
 
             which_iw_status, which_iw_result = getstatusoutput('which iw')
             if which_iw_status != 0:
