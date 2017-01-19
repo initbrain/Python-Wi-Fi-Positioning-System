@@ -25,11 +25,11 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 
-__version__ = "0.1.15"
+__version__ = "0.1.23"
 
 # A Google Maps Geolocation API key is required, get it yours here:
 # https://developers.google.com/maps/documentation/geolocation/intro
-API_KEY = 'YOUR_KEY'
+API_KEY = os.environ.get('GOOGLE_API_KEY') or 'YOUR_KEY'
 
 # Alexander Mylnikov API
 # https://www.mylnikov.org/archives/1170
@@ -184,7 +184,9 @@ def get_signal_strengths(wifi_scan_method):
         if iw_scan_status != 0:
             print "[!] Unable to scan for Wi-Fi networks !"
             print "Used command: '%s'" % iw_command
-            print "Result:\n" + '\n'.join(iw_scan_result.split('\n')[:10]) + '\n[...]'
+            print "Result:\n" + '\n'.join(iw_scan_result.split('\n')[:10])
+            if len(iw_scan_result.split('\n')) > 10:
+				print "[...]"
             exit(1)
         else:
             parsing_result = re.compile("BSS ([\w\d\:]+).*\n.*\n.*\n.*\n.*\n\tsignal: ([-\d]+)", re.MULTILINE).findall(iw_scan_result)
@@ -200,7 +202,9 @@ def get_signal_strengths(wifi_scan_method):
         if airport_scan_status != 0:
             print "[!] Unable to scan for Wi-Fi networks !"
             print "Used command: '%s'" % airport_xml_cmd
-            print "Result:\n" + '\n'.join(airport_scan_xml.split('\n')[:10]) + '\n[...]'
+            print "Result:\n" + '\n'.join(airport_scan_xml.split('\n')[:10])
+            if len(airport_scan_xml.split('\n')) > 10:
+				print "[...]"
             exit(1)
         else:
             root = ET.fromstring(airport_scan_xml)
@@ -216,7 +220,9 @@ def get_signal_strengths(wifi_scan_method):
         if ifconfig_scan_status != 0:
             print "[!] Unable to scan for Wi-Fi networks !"
             print "Used command: '%s'" % ifconfig_cmd
-            print "Result:\n" + '\n'.join(ifconfig_scan_result.split('\n')[:10]) + '\n[...]'
+            print "Result:\n" + '\n'.join(ifconfig_scan_result.split('\n')[:10])
+            if len(ifconfig_scan_result.split('\n')) > 10:
+				print "[...]"
             exit(1)
         else:
             parsing_result = re.compile("nwid\s+[\w-]+\s+chan\s+\d+\s+bssid\s+([\w\d\:]+)\s+([-\d]+)dBm", re.MULTILINE).findall(ifconfig_scan_result)
@@ -276,11 +282,20 @@ def check_prerequisites():
                 #print "[+] This script need to be run as root, current user is '%s'" % os.environ.get('USER')
                 if args.verbose:
                     print "[+] Using '" + perm_cmd.split()[0] + "' for asking permissions"
-                #print perm_cmd.split()[0],
-                #      perm_cmd.split() + [
-                #          ' '.join(['./' + sys.argv[0].lstrip('./')] + sys.argv[1:])
-                #      ]
-                os.execvp(perm_cmd.split()[0], perm_cmd.split() + sys.argv )
+                if perm_cmd is 'sudo':
+                    #print perm_cmd.split()[0], perm_cmd.split() + [
+                    #          ' '.join(['./' + sys.argv[0].lstrip('./')])
+                    #      ] + sys.argv[1:]
+                    os.execvp(perm_cmd.split()[0], perm_cmd.split() + [
+                                  ' '.join(['./' + sys.argv[0].lstrip('./')])
+                              ] + sys.argv[1:])
+                else:
+                    #print perm_cmd.split()[0], perm_cmd.split() + [
+                    #          ' '.join(['./' + sys.argv[0].lstrip('./')] + sys.argv[1:])
+                    #      ]
+                    os.execvp(perm_cmd.split()[0], perm_cmd.split() + [
+                                  ' '.join(['./' + sys.argv[0].lstrip('./')] + sys.argv[1:])
+                              ])
 
             which_iw_status, which_iw_result = getstatusoutput('which iw')
             if which_iw_status != 0:
