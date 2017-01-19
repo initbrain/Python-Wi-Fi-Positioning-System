@@ -15,6 +15,7 @@ Python Wi-Fi Positioning System - Wi-Fi geolocation script using the Google Maps
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from commands import getoutput, getstatusoutput
 import simplejson
+import textwrap
 import urllib2
 import grp
 import sys
@@ -62,15 +63,14 @@ def prettify_json(json_data):
         return simplejson.dumps(json_data)
 
 
-def create_overview(api_result, filename='Wifi_geolocation.html', filepath=get_scriptpath()):
-    # TODO parameter for google.maps.MapTypeId
-    # ROADMAP   displays the default road map view. This is the default map type.
-    # SATELLITE displays Google Earth satellite images
-    # HYBRID    displays a mixture of normal and satellite views
-    # TERRAIN   displays a physical map based on terrain information.
-    map_type = 'HYBRID'  # HYBRID, ROADMAP, SATELLITE, TERRAIN
+def create_overview(api_result, map_type, filename='Wifi_geolocation.html', filepath=get_scriptpath()):
+    """ROADMAP   displays the default road map view
+       SATELLITE displays Google Earth satellite images
+       HYBRID    displays a mixture of normal and satellite views
+                (this is the default map type)
+       TERRAIN   displays a physical map based on terrain information"""
 
-    html="""<!DOCTYPE html>
+    html = """<!DOCTYPE html>
     <html>
         <head>
             <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
@@ -412,7 +412,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Contact: initbrain@gmail.com''' % (program_shortdesc, program_copyright)
 
-    parser = MyParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
+    parser = MyParser(description=program_license,
+                      formatter_class=RawDescriptionHelpFormatter,
+                      epilog=textwrap.dedent('''\
+                          additional informations:
+                            ROADMAP   displays the default road map view
+                            SATELLITE displays Google Earth satellite images
+                            HYBRID    displays a mixture of normal and satellite views
+                                      (this is the default map type)
+                            TERRAIN   displays a physical map based on terrain information'''))
 
     parser.add_argument('-V', '--version', action='version', version=program_version_message)
     parser.add_argument('-L', '--license', action='version', version=detailed_license,
@@ -420,15 +428,18 @@ Contact: initbrain@gmail.com''' % (program_shortdesc, program_copyright)
     parser.add_argument('-v', '--verbose', action="store_true",
                         help='enable verbose messages',
                         default=False)
+    parser.add_argument('-k', '--api-key', action="store", dest="api_key",
+                        help='Google Maps Geolocation API key (could be hardcoded)',
+                        default=None)
     parser.add_argument('-p', '--json-prettify', action="store_true",
                         help='prettify JSON output',
                         default=False)
     parser.add_argument('-o', '--with-overview', action="store_true",
                         help='accuracy overview file generation',
                         default=False)
-    parser.add_argument('-k', '--api-key', action="store", dest="api_key",
-                        help='Google Maps Geolocation API key (could be hardcoded)',
-                        default=None)
+    parser.add_argument('-m', '--map-type', choices=['ROADMAP', 'SATELLITE', 'HYBRID', 'TERRAIN'],
+                        help='accuracy overview map type',
+                        default='HYBRID')
 
     # Because using Mac OS X don't require to specify a Wi-Fi interface
     if sys.platform == 'darwin':
@@ -516,4 +527,4 @@ if __name__ == "__main__":
         if args.with_overview: 
             if args.verbose:
                 print "[+] Accuracy overview"
-            create_overview(api_result)
+            create_overview(api_result, args.map_type)
