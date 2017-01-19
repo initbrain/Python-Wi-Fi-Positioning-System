@@ -25,11 +25,12 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 
+
 __version__ = "0.1.15"
 
 # A Google Maps Geolocation API key is required, get it yours here:
 # https://developers.google.com/maps/documentation/geolocation/intro
-API_KEY = 'YOUR_KEY'
+API_KEY = os.getenv('GOOGLE_API_KEY') or 'YOUR_KEY'
 
 # Alexander Mylnikov API
 # https://www.mylnikov.org/archives/1170
