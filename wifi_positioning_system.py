@@ -59,7 +59,7 @@ def prettify_json(json_data):
     if args.json_prettify:
         return '\n'.join([l.rstrip() for l in simplejson.dumps(json_data, sort_keys=True, indent=4*' ').splitlines()])
     else:
-        return json_data
+        return simplejson.dumps(json_data)
 
 
 def create_overview(api_result, filename='Wifi_geolocation.html', filepath=get_scriptpath()):
@@ -280,10 +280,7 @@ def check_prerequisites():
                 #      perm_cmd.split() + [
                 #          ' '.join(['./' + sys.argv[0].lstrip('./')] + sys.argv[1:])
                 #      ]
-                os.execvp(perm_cmd.split()[0],
-                          perm_cmd.split() + [
-                              ' '.join(['./' + sys.argv[0].lstrip('./')] + sys.argv[1:])
-                          ])
+                os.execvp(perm_cmd.split()[0], perm_cmd.split() + sys.argv )
 
             which_iw_status, which_iw_result = getstatusoutput('which iw')
             if which_iw_status != 0:
