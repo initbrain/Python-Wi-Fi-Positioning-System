@@ -254,7 +254,7 @@ def check_prerequisites():
                     current_user_groups = [grp.getgrgid(g).gr_name for g in os.getgroups()]
                     if 'sudo' in current_user_groups or \
                        'admin' in current_user_groups:
-                        perm_cmd = 'sudo'
+                        perm_cmd = 'sudo --preserve-env'
                     #etc_sudoers_status, etc_sudoers_result = getstatusoutput('sudo cat /etc/sudoers')
                     # If 'sudo' is configured for the current user
                     #if etc_sudoers_status is 0:
@@ -282,7 +282,7 @@ def check_prerequisites():
                 #print "[+] This script need to be run as root, current user is '%s'" % os.environ.get('USER')
                 if args.verbose:
                     print "[+] Using '" + perm_cmd.split()[0] + "' for asking permissions"
-                if perm_cmd is 'sudo':
+                if perm_cmd is 'sudo --preserve-env':
                     #print perm_cmd.split()[0], perm_cmd.split() + [
                     #          ' '.join(['./' + sys.argv[0].lstrip('./')])
                     #      ] + sys.argv[1:]
