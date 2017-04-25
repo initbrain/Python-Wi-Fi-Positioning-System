@@ -127,5 +127,5 @@ Special thanks go to contributors!
     2017-01-03: modified to work with the new Google Geolocation API - [Giovanni Angoli (@juzam)](https://twitter.com/juzam)  
     2017-01-06: merging all modifications - [Julien Deudon (@initbrain)](https://twitter.com/initbrain)  
     2017-01-07: modified to support new permissions assignement methods - [Julien Deudon (@initbrain)](https://twitter.com/initbrain)  
-    2017-01-08: source code reorganization - [Julien Deudon (@initbrain)](https://twitter.com/initbrain)
+    2017-01-08: source code reorganization - [Julien Deudon (@initbrain)](https://twitter.com/initbrain)  
     2017-01-15: OpenBSD port - [Geoffrey Robert (@mks10110)](https://twitter.com/mks10110)
